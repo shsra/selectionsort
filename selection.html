@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selection Sort Visualizer</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Nunito', sans-serif; }
+    html, body { height: 100%; margin: 0; }
+
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes swapLeft {
+      0% { transform: translateX(0); }
+      50% { transform: translateY(-60px); }
+      100% { transform: translateX(var(--swap-dist)); }
+    }
+    @keyframes swapRight {
+      0% { transform: translateX(0); }
+      50% { transform: translateY(60px); }
+      100% { transform: translateX(var(--swap-dist-r)); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+      50% { box-shadow: 0 0 20px 8px rgba(251, 191, 36, 0.3); }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-120px) rotate(720deg); opacity: 0; }
+    }
+    .bar-pop { animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .swap-left { animation: swapLeft 0.6s ease-in-out forwards; }
+    .swap-right { animation: swapRight 0.6s ease-in-out forwards; }
+    .pulse-glow { animation: pulseGlow 1s infinite; }
+    .slide-up { animation: slideUp 0.4s ease-out forwards; }
+    .history-item { animation: slideUp 0.3s ease-out forwards; }
+
+    .bar-box {
+      transition: background 0.3s, border-color 0.3s;
+      position: relative;
+    }
+
+    .tag {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .confetti-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confetti 1s ease-out forwards;
+    }
+
+    .step-btn {
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .step-btn:hover { transform: translateY(-2px); }
+    .step-btn:active { transform: translateY(0); }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none; margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+
+    .scroll-area::-webkit-scrollbar { width: 6px; }
+    .scroll-area::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 3px; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app" class="w-full h-full overflow-auto" style="background: linear-gradient(135deg, #e0f7ff 0%, #b3e5ff 50%, #81d4ff 100%);"><!-- Header -->
+   <header class="text-center pt-8 pb-4 px-4">
+    <h1 id="pageTitle" class="text-3xl md:text-4xl font-900 bg-gradient-to-r from-cyan-600 via-blue-500 to-sky-600 bg-clip-text text-transparent drop-shadow-lg">Selection Sort Visualizer</h1>
+    <p id="subtitleText" class="mt-2 text-blue-600/60 font-600 text-sm md:text-base">Pahami algoritma sorting step-by-step</p>
+   </header>
+   <main class="max-w-4xl mx-auto px-4 pb-12"><!-- Input Section -->
+    <section class="bg-blue-100/40 backdrop-blur rounded-2xl p-5 mb-6 border border-blue-200/30"><label class="text-blue-700 font-700 text-sm mb-3 block"><i data-lucide="keyboard" class="inline w-4 h-4 mr-1 -mt-0.5"></i> Masukkan Angka</label>
+     <div class="flex gap-2"><input id="numInput" type="number" placeholder="Ketik angka..." class="flex-1 bg-white/50 border border-blue-300/40 rounded-xl px-4 py-3 text-blue-900 font-700 text-lg focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30 placeholder:text-blue-300/40"> <button id="addBtn" class="step-btn bg-gradient-to-r from-sky-400 to-cyan-400 text-white font-800 px-5 rounded-xl flex items-center gap-1 shadow-lg shadow-sky-300/30"> <i data-lucide="plus" class="w-5 h-5"></i> Tambah </button>
+     </div>
+     <div class="flex gap-2 mt-3 flex-wrap"><button id="randomBtn" class="step-btn bg-white/30 border border-blue-300/30 text-blue-700 font-600 text-xs px-3 py-1.5 rounded-lg hover:bg-white/50 flex items-center gap-1"><i data-lucide="shuffle" class="w-3 h-3"></i> Random 5</button> <button id="clearBtn" class="step-btn bg-white/30 border border-blue-300/30 text-blue-700 font-600 text-xs px-3 py-1.5 rounded-lg hover:bg-white/50 flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Reset</button>
+     </div><!-- Tags for current array -->
+     <div id="inputTags" class="flex flex-wrap gap-2 mt-3 min-h-[32px]"></div>
+    </section><!-- Visualization Area -->
+    <section id="vizSection" class="hidden"><!-- Controls -->
+     <div class="flex flex-wrap justify-center gap-3 mb-5"><button id="startBtn" class="step-btn bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-800 px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-300/30 flex items-center gap-2"><i data-lucide="play" class="w-5 h-5"></i> Mulai Sorting</button> <button id="nextBtn" class="step-btn bg-gradient-to-r from-cyan-400 to-sky-500 text-white font-800 px-5 py-2.5 rounded-xl shadow-lg shadow-cyan-300/30 flex items-center gap-2 hidden"><i data-lucide="skip-forward" class="w-5 h-5"></i> Langkah Berikutnya</button> <button id="autoBtn" class="step-btn bg-gradient-to-r from-violet-400 to-purple-500 text-white font-800 px-5 py-2.5 rounded-xl shadow-lg shadow-violet-300/30 flex items-center gap-2 hidden"><i data-lucide="fast-forward" class="w-5 h-5"></i> Auto Play</button>
+     </div><!-- Step Info -->
+     <div id="stepInfo" class="bg-blue-100/40 backdrop-blur rounded-2xl p-5 mb-5 border border-blue-200/30 text-center hidden">
+      <p id="stepText" class="text-blue-800 font-700 text-base md:text-lg leading-relaxed"></p>
+     </div><!-- Bars -->
+     <div class="bg-blue-100/40 backdrop-blur rounded-2xl p-5 mb-5 border border-blue-200/30">
+      <p class="text-blue-700 font-700 text-xs mb-4 uppercase tracking-wider"><i data-lucide="bar-chart-3" class="inline w-3.5 h-3.5 mr-1 -mt-0.5"></i> Visualisasi Array</p>
+      <div id="barsContainer" class="flex items-end justify-center gap-3 min-h-[240px] relative pt-6"></div><!-- Legend -->
+      <div class="flex flex-wrap justify-center gap-4 mt-5 text-xs font-700"><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gradient-to-b from-sky-300 to-sky-500 inline-block"></span><span class="text-blue-700/70">Sedang Dicek</span></span> <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gradient-to-b from-rose-300 to-rose-500 inline-block"></span><span class="text-blue-700/70">Minimum Sementara</span></span> <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gradient-to-b from-emerald-300 to-emerald-600 inline-block"></span><span class="text-blue-700/70">Sudah Terurut</span></span> <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gradient-to-b from-cyan-300 to-cyan-500 inline-block"></span><span class="text-blue-700/70">Belum Diproses</span></span>
+      </div>
+     </div><!-- History -->
+     <div class="bg-blue-100/40 backdrop-blur rounded-2xl p-5 border border-blue-200/30">
+      <p class="text-blue-700 font-700 text-xs mb-3 uppercase tracking-wider"><i data-lucide="history" class="inline w-3.5 h-3.5 mr-1 -mt-0.5"></i> Riwayat Perubahan Array</p>
+      <div id="historyList" class="scroll-area max-h-[300px] overflow-y-auto space-y-2"></div>
+     </div>
+    </section>
+   </main>
+  </div>
+  <script>
+  // ---- State ----
+  let arr = [];
+  let steps = [];
+  let currentStep = -1;
+  let autoInterval = null;
+  let isSorting = false;
+
+  const COLORS = {
+    unsorted: 'from-cyan-300 to-cyan-500',
+    checking: 'from-sky-300 to-sky-500',
+    minTemp: 'from-rose-300 to-rose-500',
+    sorted: 'from-emerald-300 to-emerald-600',
+  };
+
+  const BORDER_COLORS = {
+    unsorted: 'border-cyan-400/40',
+    checking: 'border-sky-400/60',
+    minTemp: 'border-rose-400/60',
+    sorted: 'border-emerald-400/40',
+  };
+
+  // ---- Elements ----
+  const $ = id => document.getElementById(id);
+  const numInput = $('numInput');
+  const addBtn = $('addBtn');
+  const randomBtn = $('randomBtn');
+  const clearBtn = $('clearBtn');
+  const inputTags = $('inputTags');
+  const vizSection = $('vizSection');
+  const startBtn = $('startBtn');
+  const nextBtn = $('nextBtn');
+  const autoBtn = $('autoBtn');
+  const stepInfo = $('stepInfo');
+  const stepText = $('stepText');
+  const barsContainer = $('barsContainer');
+  const historyList = $('historyList');
+
+  // ---- Generate Steps ----
+  function generateSteps(input) {
+    const a = [...input];
+    const n = a.length;
+    const allSteps = [];
+
+    allSteps.push({
+      type: 'init',
+      array: [...a],
+      msg: `Array awal: [${a.join(', ')}]. Selection Sort akan mencari elemen terkecil di setiap iterasi dan menukarnya ke posisi yang benar.`,
+      sorted: [],
+      highlight: [],
+      minIdx: -1,
+    });
+
+    for (let i = 0; i < n - 1; i++) {
+      let minIdx = i;
+
+      allSteps.push({
+        type: 'iter_start',
+        array: [...a],
+        msg: `🔄 Iterasi ${i + 1}: Cari elemen terkecil dari index ${i} sampai ${n - 1}. Anggap index ${i} (nilai ${a[i]}) sebagai minimum sementara.`,
+        sorted: Array.from({length: i}, (_, k) => k),
+        highlight: [i],
+        minIdx: i,
+        iterIndex: i,
+      });
+
+      for (let j = i + 1; j < n; j++) {
+        const isNewMin = a[j] < a[minIdx];
+        allSteps.push({
+          type: 'compare',
+          array: [...a],
+          msg: isNewMin
+            ? `👀 Bandingkan: ${a[j]} (index ${j}) < ${a[minIdx]} (index ${minIdx})? ✅ Ya! Minimum baru = ${a[j]} di index ${j}.`
+            : `👀 Bandingkan: ${a[j]} (index ${j}) < ${a[minIdx]} (index ${minIdx})? ❌ Tidak. Minimum tetap = ${a[minIdx]}.`,
+          sorted: Array.from({length: i}, (_, k) => k),
+          highlight: [j],
+          minIdx: isNewMin ? j : minIdx,
+          iterIndex: i,
+        });
+        if (isNewMin) minIdx = j;
+      }
+
+      if (minIdx !== i) {
+        allSteps.push({
+          type: 'swap',
+          array: [...a],
+          msg: `🔀 Tukar! Pindahkan ${a[minIdx]} (index ${minIdx}) ke posisi ${i}, dan ${a[i]} ke posisi ${minIdx}.`,
+          sorted: Array.from({length: i}, (_, k) => k),
+          swapPair: [i, minIdx],
+          minIdx,
+          iterIndex: i,
+        });
+        [a[i], a[minIdx]] = [a[minIdx], a[i]];
+        allSteps.push({
+          type: 'after_swap',
+          array: [...a],
+          msg: `✅ Setelah tukar: [${a.join(', ')}]. Elemen ${a[i]} sudah di posisi yang benar!`,
+          sorted: Array.from({length: i + 1}, (_, k) => k),
+          highlight: [],
+          minIdx: -1,
+          iterIndex: i,
+        });
+      } else {
+        allSteps.push({
+          type: 'no_swap',
+          array: [...a],
+          msg: `✨ Elemen ${a[i]} sudah di posisi yang benar (index ${i}). Tidak perlu tukar!`,
+          sorted: Array.from({length: i + 1}, (_, k) => k),
+          highlight: [],
+          minIdx: -1,
+          iterIndex: i,
+        });
+      }
+    }
+
+    allSteps.push({
+      type: 'done',
+      array: [...a],
+      msg: `🎉 Sorting selesai! Array terurut: [${a.join(', ')}]`,
+      sorted: Array.from({length: n}, (_, k) => k),
+      highlight: [],
+      minIdx: -1,
+    });
+
+    return allSteps;
+  }
+
+  // ---- Render Bars ----
+function renderBars(step) {
+    const a = step.array;
+    const maxVal = Math.max(...a, 1);
+    barsContainer.innerHTML = '';
+    const barWidth = 60; // Fixed width untuk semua bar
+
+    a.forEach((val, idx) => {
+      const isSorted = step.sorted && step.sorted.includes(idx);
+      const isMin = step.minIdx === idx;
+      const isHighlight = step.highlight && step.highlight.includes(idx);
+      const isSwapA = step.swapPair && step.swapPair[0] === idx;
+      const isSwapB = step.swapPair && step.swapPair[1] === idx;
+
+      let colorClass = COLORS.unsorted;
+      let borderClass = BORDER_COLORS.unsorted;
+      let tagHTML = '';
+
+      if (isSorted) {
+        colorClass = COLORS.sorted;
+        borderClass = BORDER_COLORS.sorted;
+      }
+      if (isMin && !isSorted) {
+        colorClass = COLORS.minTemp;
+        borderClass = BORDER_COLORS.minTemp;
+        tagHTML = `<span class="tag bg-rose-500 text-white">MIN</span>`;
+      }
+      if (isHighlight && !isSorted && !isMin) {
+        colorClass = COLORS.checking;
+        borderClass = BORDER_COLORS.checking;
+        tagHTML = `<span class="tag bg-sky-400 text-white">CEK</span>`;
+      }
+      if (isSwapA || isSwapB) {
+        tagHTML = `<span class="tag bg-pink-500 text-white">SWAP</span>`;
+      }
+
+      const heightPct = Math.max(20, (val / maxVal) * 160);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col items-center';
+      wrapper.style.width = barWidth + 'px';
+
+      const bar = document.createElement('div');
+      bar.className = `bar-box bg-gradient-to-b ${colorClass} border-2 ${borderClass} rounded-lg flex items-center justify-center bar-pop`;
+      bar.style.cssText = `width:${barWidth}px;height:${heightPct}px;animation-delay:${idx * 40}ms;`;
+      if (isMin && !isSorted) bar.classList.add('pulse-glow');
+
+      bar.innerHTML = `${tagHTML}<span class="text-blue-900 font-800 text-sm drop-shadow">${val}</span>`;
+
+      // Swap animation
+      if (step.type === 'swap') {
+        const dist = (step.swapPair[1] - step.swapPair[0]) * (barWidth + 12);
+        if (isSwapA) {
+          bar.style.setProperty('--swap-dist', dist + 'px');
+          bar.classList.add('swap-left');
+        }
+        if (isSwapB) {
+          bar.style.setProperty('--swap-dist-r', -dist + 'px');
+          bar.classList.add('swap-right');
+        }
+      }
+
+      const label = document.createElement('span');
+      label.className = 'text-blue-600/60 text-xs font-700 mt-1';
+      label.textContent = `[${idx}]`;
+
+      wrapper.appendChild(bar);
+      wrapper.appendChild(label);
+      barsContainer.appendChild(wrapper);
+    });
+  }
+
+  // ---- Render History ----
+  function addHistory(step, stepNum) {
+    const div = document.createElement('div');
+    div.className = 'history-item bg-blue-200/20 rounded-xl px-4 py-3 border border-blue-300/20';
+
+    let typeLabel = '';
+    let typeColor = '';
+    switch(step.type) {
+      case 'init': typeLabel = 'AWAL'; typeColor = 'bg-blue-500'; break;
+      case 'iter_start': typeLabel = 'ITERASI'; typeColor = 'bg-cyan-500'; break;
+      case 'compare': typeLabel = 'BANDINGKAN'; typeColor = 'bg-sky-500'; break;
+      case 'swap': typeLabel = 'TUKAR'; typeColor = 'bg-pink-500'; break;
+      case 'after_swap': typeLabel = 'HASIL'; typeColor = 'bg-emerald-500'; break;
+      case 'no_swap': typeLabel = 'TETAP'; typeColor = 'bg-teal-500'; break;
+      case 'done': typeLabel = 'SELESAI'; typeColor = 'bg-emerald-500'; break;
+      default: typeLabel = 'STEP'; typeColor = 'bg-blue-400';
+    }
+
+    div.innerHTML = `
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="text-[10px] font-800 ${typeColor} text-white px-2 py-0.5 rounded-md">${typeLabel}</span>
+        <span class="text-blue-600/50 text-[10px] font-700">Step ${stepNum}</span>
+      </div>
+      <p class="text-blue-800 text-xs font-600 leading-relaxed">${step.msg}</p>
+      <div class="flex gap-1 mt-2 flex-wrap">
+        ${step.array.map((v, i) => {
+          const s = step.sorted && step.sorted.includes(i);
+          return `<span class="text-[11px] font-800 px-1.5 py-0.5 rounded ${s ? 'bg-emerald-500/20 text-emerald-700' : 'bg-cyan-500/10 text-blue-700'}">${v}</span>`;
+        }).join('')}
+      </div>
+    `;
+    historyList.prepend(div);
+  }
+
+  // ---- Confetti ----
+  function spawnConfetti() {
+    const colors = ['#0ea5e9','#06b6d4','#0d9488','#14b8a6','#22d3ee','#67e8f9'];
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-particle';
+      p.style.cssText = `left:${Math.random()*100}%;top:${60+Math.random()*30}%;background:${colors[i%colors.length]};animation-delay:${Math.random()*0.5}s;`;
+      barsContainer.appendChild(p);
+      setTimeout(() => p.remove(), 1500);
+    }
+  }
+
+  // ---- Render Tags ----
+  function renderTags() {
+    inputTags.innerHTML = arr.length === 0
+      ? '<span class="text-blue-600/40 text-xs font-600 italic">Belum ada angka...</span>'
+      : arr.map((v, i) => `<span class="bg-gradient-to-r from-cyan-400/20 to-sky-400/20 border border-cyan-400/40 text-cyan-700 text-xs font-800 px-2.5 py-1 rounded-lg flex items-center gap-1">${v}<button onclick="removeNum(${i})" class="hover:text-rose-600 transition-colors ml-0.5">&times;</button></span>`).join('');
+    vizSection.classList.toggle('hidden', arr.length < 2);
+  }
+
+  window.removeNum = function(i) {
+    if (isSorting) return;
+    arr.splice(i, 1);
+    renderTags();
+    resetSort();
+  };
+
+  function resetSort() {
+    steps = [];
+    currentStep = -1;
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+    isSorting = false;
+    startBtn.classList.remove('hidden');
+    nextBtn.classList.add('hidden');
+    autoBtn.classList.add('hidden');
+    autoBtn.innerHTML = '<i data-lucide="fast-forward" class="w-5 h-5"></i> Auto Play';
+    stepInfo.classList.add('hidden');
+    barsContainer.innerHTML = '';
+    historyList.innerHTML = '';
+    lucide.createIcons();
+  }
+
+  // ---- Add Number ----
+  function addNumber() {
+    const val = parseInt(numInput.value);
+    if (isNaN(val)) return;
+    if (arr.length >= 15) return;
+    arr.push(val);
+    numInput.value = '';
+    numInput.focus();
+    renderTags();
+    resetSort();
+  }
+
+  addBtn.addEventListener('click', addNumber);
+  numInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addNumber(); } });
+
+  randomBtn.addEventListener('click', () => {
+    if (isSorting) return;
+    arr = Array.from({length: 5}, () => Math.floor(Math.random() * 99) + 1);
+    renderTags();
+    resetSort();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    arr = [];
+    renderTags();
+    resetSort();
+  });
+
+  // ---- Start ----
+  startBtn.addEventListener('click', () => {
+    if (arr.length < 2) return;
+    steps = generateSteps(arr);
+    currentStep = -1;
+    isSorting = true;
+    historyList.innerHTML = '';
+    startBtn.classList.add('hidden');
+    nextBtn.classList.remove('hidden');
+    autoBtn.classList.remove('hidden');
+    stepInfo.classList.remove('hidden');
+    lucide.createIcons();
+    advanceStep();
+  });
+
+  // ---- Next Step ----
+  function advanceStep() {
+    if (currentStep >= steps.length - 1) {
+      finishSort();
+      return;
+    }
+    currentStep++;
+    const step = steps[currentStep];
+    stepText.textContent = step.msg;
+    stepInfo.classList.remove('hidden');
+    renderBars(step);
+    addHistory(step, currentStep + 1);
+
+    if (step.type === 'done') finishSort();
+  }
+
+  function finishSort() {
+    isSorting = false;
+    nextBtn.classList.add('hidden');
+    autoBtn.classList.add('hidden');
+    if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+    spawnConfetti();
+    lucide.createIcons();
+  }
+
+  nextBtn.addEventListener('click', advanceStep);
+
+  // ---- Auto Play ----
+  autoBtn.addEventListener('click', () => {
+    if (autoInterval) {
+      clearInterval(autoInterval);
+      autoInterval = null;
+      autoBtn.innerHTML = '<i data-lucide="fast-forward" class="w-5 h-5"></i> Auto Play';
+      lucide.createIcons();
+      return;
+    }
+    autoBtn.innerHTML = '<i data-lucide="pause" class="w-5 h-5"></i> Pause';
+    lucide.createIcons();
+    autoInterval = setInterval(() => {
+      if (currentStep >= steps.length - 1) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        finishSort();
+        return;
+      }
+      advanceStep();
+    }, 1200);
+  });
+
+  // ---- Init ----
+  renderTags();
+
+  // ---- Element SDK ----
+  const defaultConfig = {
+    page_title: 'Selection Sort Visualizer',
+    subtitle_text: 'Pahami algoritma sorting step-by-step',
+    background_color: '#e0f7ff',
+    surface_color: '#87ceeb30',
+    text_color: '#0369a1',
+    primary_action_color: '#06b6d4',
+    secondary_action_color: '#0ea5e9',
+    font_family: 'Nunito',
+    font_size: 20,
+  };
+
+  function applyConfig(config) {
+    const t = config.page_title || defaultConfig.page_title;
+    const s = config.subtitle_text || defaultConfig.subtitle_text;
+    const font = config.font_family || defaultConfig.font_family;
+    const size = config.font_size || defaultConfig.font_size;
+    const bg = config.background_color || defaultConfig.background_color;
+    const text = config.text_color || defaultConfig.text_color;
+    const primary = config.primary_action_color || defaultConfig.primary_action_color;
+    const secondary = config.secondary_action_color || defaultConfig.secondary_action_color;
+    const surface = config.surface_color || defaultConfig.surface_color;
+
+    $('pageTitle').textContent = t;
+    $('subtitleText').textContent = s;
+
+    document.body.style.fontFamily = `${font}, Nunito, sans-serif`;
+    $('pageTitle').style.fontSize = `${size * 2}px`;
+    $('subtitleText').style.fontSize = `${size * 0.9}px`;
+
+    const app = $('app');
+    app.style.background = `linear-gradient(135deg, ${bg} 0%, ${adjustColor(bg, 20)} 100%)`;
+    app.style.color = text;
+
+    addBtn.style.background = `linear-gradient(to right, ${primary}, ${adjustColor(primary, -20)})`;
+    startBtn.style.background = `linear-gradient(to right, #34d399, #14b8a6)`;
+    nextBtn.style.background = `linear-gradient(to right, ${secondary}, ${adjustColor(secondary, -20)})`;
+  }
+
+  function adjustColor(hex, amt) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    let r = parseInt(hex.substring(0, 2), 16) + amt;
+    let g = parseInt(hex.substring(2, 4), 16) + amt;
+    let b = parseInt(hex.substring(4, 6), 16) + amt;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+  }
+
+  window.elementSdk.init({
+    defaultConfig,
+    onConfigChange: async (config) => { applyConfig(config); },
+    mapToCapabilities: (config) => ({
+      recolorables: [
+        { get: () => config.background_color || defaultConfig.background_color, set: v => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); }},
+        { get: () => config.surface_color || defaultConfig.surface_color, set: v => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); }},
+        { get: () => config.text_color || defaultConfig.text_color, set: v => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); }},
+        { get: () => config.primary_action_color || defaultConfig.primary_action_color, set: v => { config.primary_action_color = v; window.elementSdk.setConfig({ primary_action_color: v }); }},
+        { get: () => config.secondary_action_color || defaultConfig.secondary_action_color, set: v => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); }},
+      ],
+      borderables: [],
+      fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: v => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }},
+      fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: v => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }},
+    }),
+    mapToEditPanelValues: (config) => new Map([
+      ['page_title', config.page_title || defaultConfig.page_title],
+      ['subtitle_text', config.subtitle_text || defaultConfig.subtitle_text],
+    ]),
+  });
+
+  lucide.createIcons();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f01f00335c1a30d',t:'MTc3NjgzMjY5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
